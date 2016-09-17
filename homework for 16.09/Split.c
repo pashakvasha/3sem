@@ -5,6 +5,11 @@
 void Split(char * s, char * delim, char*** tokens, int* count);
 void MyGets(char **s);
 
+/*
+ * FIXIT: все магические числа вроде 10, 100, 1000 нужна заменить на константы:
+ * #define MAX_STRING_SIZE 1000 
+ * и т.д.
+ */
 
 int main() {
 	int i = 0, count = 0;
