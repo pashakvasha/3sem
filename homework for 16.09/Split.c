@@ -2,30 +2,28 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX_STRING_SIZE 1000
+#define MAX_TOKEN_SIZE 100
+#define NUMBER_OF_TOKENS 100
+
 void Split(char * s, char * delim, char*** tokens, int* count);
 void MyGets(char **s);
-
-/*
- * FIXIT: все магические числа вроде 10, 100, 1000 нужна заменить на константы:
- * #define MAX_STRING_SIZE 1000 
- * и т.д.
- */
 
 int main() {
 	int i = 0, count = 0;
 	
-	char *s = calloc(1000, sizeof(char) );
+	char *s = calloc(MAX_STRING_SIZE, sizeof(char) );
 	MyGets(&s);
 	
 	
-	char* delim = calloc(10, sizeof(char) );
+	char* delim = calloc(MAX_STRING_SIZE, sizeof(char) );
 	MyGets(&delim);
 	
-	char **tokens = malloc(100 * sizeof(char*) );
+	char **tokens = malloc(NUMBER_OF_TOKENS * sizeof(char*) );
 	
-	for (i = 0; i < 100; i++) 
+	for (i = 0; i < NUMBER_OF_TOKENS; i++) 
 	{
-		tokens[i] = malloc(100 * sizeof(char) );
+		tokens[i] = malloc(MAX_TOKEN_SIZE * sizeof(char) );
 	}
 	
 	Split(s, delim, &tokens, &count);
@@ -34,7 +32,7 @@ int main() {
 		printf("tokens[%d] = %s\n", i, tokens[i]);
 	}
 	
-	for (i = 0; i < 100; i++) 
+	for (i = 0; i < NUMBER_OF_TOKENS; i++) 
 	{
 		free(tokens[i]);
 	}
@@ -56,7 +54,7 @@ void Split(char * s, char * delim, char*** tokens, int* count) {
 
 void MyGets(char **s) {
 	int c, i = 0;
-	while ( (c = getchar()) != '\n') {
+	while ( ( (c = getchar()) != '\n' ) && (i < MAX_STRING_SIZE - 1) ) {
 		(*s)[i] = c;
 		i++;
 	}
