@@ -14,7 +14,7 @@ int main() {
 		pid_t pid = fork();
 		if (pid > 0) {
 			printf("\ngetppid = %d\ngetpid = %d\n", getppid(), getpid());
-			wait( &(status[i+1]) );
+			wait( &(status[i + 1]) );
 			printf("\nMy child (process = %d) has died\n", i);
 			exit(status[i]);
 		}
