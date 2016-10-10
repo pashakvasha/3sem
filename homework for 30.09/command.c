@@ -14,13 +14,22 @@
 void Split(char * s, char * delim, char*** tokens, int* count);
 void MyGets(char **s, FILE* src);
 
-
 int main(int argc, char const *argv[])
 {
 	int i = 0, tokensCount = 0;
-	char delim[1] = {' '};
+  
+/*
+ * Размер массива можно явно не указывать.
+ */
+  char delim[] = {' '};
+  
 	char* s = calloc(MAX_STRING_SIZE, sizeof(char) );
 	FILE* src = NULL;
+  
+/*
+ * обычно стараются максимально параметризовать код (меньше параметров хардкодить):
+ * название файла с командами для запуска можно было бы получать из аргументов командной строки.
+ */
 	src = fopen("test.txt", "r");
 	
 	if (src == NULL) {
@@ -42,6 +51,10 @@ int main(int argc, char const *argv[])
 	
 	for (i = 0; i < stringsCount; i++)
 	{
+/*
+ * лучше бы воспользовались стандартной ф-ей fgets.
+ * чем меньше "велосипедного" кода тем лучше.
+ */
 		MyGets(&s, src);
 		status[i] = i;
 		pid_t pid = fork();
