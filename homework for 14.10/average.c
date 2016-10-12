@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <time.h>
 
 #define COUNT_THREAD 1
 #define COUNT 1000000
