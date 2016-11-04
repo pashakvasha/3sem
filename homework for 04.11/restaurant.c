@@ -19,7 +19,6 @@ char* profession[] = {"washer.txt", "dryer.txt"};
 
 void sem(int param);
 void create_sem(char* pathname);
-int wait_space(int check_table);
 
 int main(int argc, char* argv[]) {
 	
@@ -71,11 +70,14 @@ int main(int argc, char* argv[]) {
 	fclose(src);
 	
 	int dish_type;
-	int check_table = 0;
 	char buffer[BUFFER_SIZE];
 	
 	if (profession_id == 0) {
-		int amount, i, work = 1;
+		
+		int amount, i;
+		
+		sem(TABLE_LIMIT);
+		
 		FILE* dishes = NULL;
 		dishes = fopen("dishes.txt", "r");
 	
@@ -83,33 +85,24 @@ int main(int argc, char* argv[]) {
 			perror("in.txt");  
 			return 7;          
 		}
-		while (work)
+		while (1)
 		{
-			check_table = semctl(semid, 0, GETVAL);
-			check_table = wait_space(check_table);
-			while (check_table < TABLE_LIMIT)
+			fscanf(dishes, "%d:%d", &dish_type, &amount);
+			if (dish_type == 0) {
+				sprintf(buffer, "%d\n", dish_type);
+				write(table, buffer, BUFFER_SIZE);
+				printf("WASHER HAS FINISHED HIS WORK\n");
+				printf("Now there are %d dishes on the table.\n", TABLE_LIMIT - semctl(semid, 0, GETVAL));
+				break;
+			}
+			for (i = 0; i < amount; i++)
 			{
-				fscanf(dishes, "%d:%d", &dish_type, &amount);
-				if (dish_type == 0) {
-					work = 0;
-					sprintf(buffer, "%d\n", dish_type);
-					write(table, buffer, BUFFER_SIZE);
-					printf("WASHER HAS FINISHED HIS WORK\n");
-					printf("Now there are %d dishes on the table.\n", check_table);
-					break;
-				}
-				for (i = 0; i < amount; i++)
-				{
-					check_table = semctl(semid, 0, GETVAL);
-					check_table = wait_space(check_table);
-					sleep(profession_speed[dish_type]);
-					printf("Washer has washed the dish %d and put it on the table.\n", dish_type);
-					sprintf(buffer, "%d\n", dish_type);
-					write(table, buffer, BUFFER_SIZE);
-					sem(1);
-					printf("Now there are %d dishes on the table\n", semctl(semid, 0, GETVAL));
-				}
-				check_table = semctl(semid, 0, GETVAL);
+				sleep(profession_speed[dish_type]);
+				printf("Washer has washed the dish %d and put it on the table.\n", dish_type);
+				sprintf(buffer, "%d\n", dish_type);
+				write(table, buffer, BUFFER_SIZE);
+				sem(-1);
+				printf("Now there are %d dishes on the table\n", TABLE_LIMIT - semctl(semid, 0, GETVAL));
 			}
 		}
 		
@@ -117,22 +110,17 @@ int main(int argc, char* argv[]) {
 	} else {
 		while (1) 
 		{
-			check_table = semctl(semid, 0, GETVAL);
 			read(table, buffer, BUFFER_SIZE);
 			dish_type = atoi(buffer);
 			if (dish_type == 0) {
 				printf("DRYER HAS FINISHED HIS WORK\n");
-				printf("Now there are %d dishes on the table.\n", check_table);
+				printf("Now there are %d dishes on the table.\n", TABLE_LIMIT - semctl(semid, 0, GETVAL));
 				break;
 			}
 			sleep(profession_speed[dish_type]);
 			printf("Dryer has dried the dish %d and put it away from the table.\n", dish_type);
-			sem(-1);
-			printf("Now there are %d dishes on the table.\n", semctl(semid, 0, GETVAL));
-			while (check_table == 0) 
-			{
-				check_table = semctl(semid, 0, GETVAL);
-			}
+			sem(1);
+			printf("Now there are %d dishes on the table.\n", TABLE_LIMIT - semctl(semid, 0, GETVAL));
 		}
 	}
 	close(table);
@@ -166,12 +154,4 @@ void create_sem(char* pathname) {
         printf("Can`t get semid\n");
         exit(-1);
     }
-}
-
-int wait_space(int check_table) {
-	while (check_table == TABLE_LIMIT) 
-	{
-		check_table = semctl(semid, 0, GETVAL);
-	}
-	return check_table;
 }
