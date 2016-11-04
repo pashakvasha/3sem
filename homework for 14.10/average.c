@@ -10,6 +10,16 @@
 #define COUNT_THREAD 1
 #define COUNT 1000000
 
+/* array ... транслит не используем */
+
+/*
+ К сожалению, я дезынформировал всю вашу группу по поводу работы clock'а:
+ http://stackoverflow.com/questions/2962785/c-using-clock-to-measure-time-in-multi-threaded-programs
+ 
+ Там написано, как это по-хорошему делается.
+ Поэтому скорее всего ускорения и не наблюдалось.
+ */
+
 int mas[COUNT];
 float segments_sum[COUNT_THREAD];
 float segments_sum_square[COUNT_THREAD];
@@ -18,7 +28,7 @@ typedef struct Segment {
 	int begin;
 	int end;
 	int index;
-}Segment;
+} Segment;
 
 void* my_thread(void* arg) {
 	Segment segment = *((Segment*)arg);
