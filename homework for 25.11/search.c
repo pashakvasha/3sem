@@ -22,6 +22,10 @@ void find_DFS(char * path, int depth) {
 	struct dirent* dirent;
 	while ( (dirent = readdir(direct)) != NULL )
 	{
+/*
+ * У вас следующие три строки встречаются несколько раз в коде.
+ * Их стоит вынести в отдельную ф-ю append_to_path или вроде того.
+ */
 		char * name = calloc(MAX_PATH_SIZE, sizeof(char));
 		name = strcat(name, path);
 		name = strcat(name, dirent->d_name);
