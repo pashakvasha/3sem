@@ -8,15 +8,19 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#define MAX_MESSAGE_SIZE 1000
+#define MAX_NICKNAME_SIZE 100
+#define MAX_USERS_AMOUNT 10
+
 typedef struct User {
 	struct in_addr ip;
 	unsigned short port;
 	char* nickname;
 } User;
 
-User users[10];
-char line[1000];
-char nick[100];
+User users[MAX_USERS_AMOUNT];
+char line[MAX_MESSAGE_SIZE];
+char nick[MAX_NICKNAME_SIZE];
 
 int last_user;
 int sockfd;
@@ -41,6 +45,28 @@ int search_user(char * nickname) {
 	return -1;
 }
 
+void send_message(char * message, char * sender, struct sockaddr_in recipient) {
+	if (sendto(sockfd, sender, strlen(sender) + 1, 0, (struct sockaddr*)&recipient, sizeof(recipient)) < 0) {
+		perror(NULL);
+		close(sockfd);
+		exit(1);
+	}
+	
+	if (sendto(sockfd, message, strlen(message) + 1, 0, (struct sockaddr*)&recipient, sizeof(recipient)) < 0) {
+		perror(NULL);
+		close(sockfd);
+		exit(1);
+	}
+}
+
+void send_to_all(char * message, char * sender) {
+	int i;
+	for (i = 0; i < last_user; i++) {
+		create_sockaddr(&useraddr, users[i].ip.s_addr, users[i].port);
+		send_message(message, sender, useraddr);
+	}
+}
+
 User sign_up(unsigned short port, struct in_addr ip, char * nickname) {
 	User user;
 	int k = search_user(nickname);
@@ -48,23 +74,18 @@ User sign_up(unsigned short port, struct in_addr ip, char * nickname) {
 		user = users[k];
 	}
 	else {
-		users[last_user].nickname = calloc(100, sizeof(char));
+		users[last_user].nickname = calloc(MAX_NICKNAME_SIZE, sizeof(char));
 		users[last_user].nickname = strcpy(users[last_user].nickname, nickname);
 		users[last_user].ip = ip;
 		users[last_user].port = port;
 		user = users[last_user];
+		create_sockaddr(&useraddr, users[last_user].ip.s_addr, users[last_user].port);
+		send_message("Welcome to messenger! Use user_nickname@ to send private message.\n", "SERVER", useraddr);
+		send_to_all( strcat(nickname, " HAS SIGNED UP\n"), "SERVER");
 		printf("%s HAS SIGNED UP\n", users[last_user].nickname);
 		last_user++;
 	}
 	return user;
-}
-
-void send_message(char * message, struct sockaddr_in recipient) {
-	if (sendto(sockfd, message, strlen(message) + 1, 0, (struct sockaddr*)&recipient, sizeof(recipient)) < 0) {
-		perror(NULL);
-		close(sockfd);
-		exit(1);
-	}
 }
 
 int is_private(char * message) {
@@ -102,7 +123,7 @@ int main()
 	while (1)
 	{
 		clilen = sizeof(cliaddr);
-		if ((n = recvfrom(sockfd, line, 999, 0, (struct sockaddr*)&cliaddr, &clilen)) < 0)
+		if ((n = recvfrom(sockfd, line, MAX_MESSAGE_SIZE - 1, 0, (struct sockaddr*)&cliaddr, &clilen)) < 0)
 		{
 			perror(NULL);
 			close(sockfd);
@@ -111,7 +132,7 @@ int main()
 		
 		User user = sign_up(cliaddr.sin_port, cliaddr.sin_addr, line);
 		
-		if ((n = recvfrom(sockfd, line, 999, 0, (struct sockaddr*)&cliaddr, &clilen)) < 0)
+		if ((n = recvfrom(sockfd, line, MAX_MESSAGE_SIZE - 1, 0, (struct sockaddr*)&cliaddr, &clilen)) < 0)
 		{
 			perror(NULL);
 			close(sockfd);
@@ -122,20 +143,25 @@ int main()
 		printf("%s", line);
 		
 		if ( (k = is_private(line)) ) {
-			for (i = 0; i < k; i++) {
+			for (i = 0; i < k; i++) 
+			{
 				nick[i] = line[i];
 			}
+			for (i = 0; i < MAX_MESSAGE_SIZE - k - 1; i++) 
+			{
+				line[i] = line[i + k + 1];
+			}
 			k = search_user(nick);
-			create_sockaddr(&useraddr, users[k].ip.s_addr, users[k].port);
-			send_message(user.nickname, useraddr);
-			send_message(line, useraddr);
+			if (k != -1) {
+				create_sockaddr(&useraddr, users[k].ip.s_addr, users[k].port);
+				send_message(line, user.nickname, useraddr);
+			}
+			else {
+				send_message("You try to send message to non-existent user\n", "SERVER", cliaddr);
+			}
 		}
 		else {
-			for (i = 0; i < last_user; i++) {
-				create_sockaddr(&useraddr, users[i].ip.s_addr, users[i].port);
-				send_message(user.nickname, useraddr);
-				send_message(line, useraddr);
-			}
+			send_to_all(line, user.nickname);
 		}
 		
 	}

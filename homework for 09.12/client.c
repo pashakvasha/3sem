@@ -9,17 +9,39 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 
+#define MAX_MESSAGE_SIZE 1000
+#define MAX_NICKNAME_SIZE 100
+
+int sockfd;
+int n, len;
+char sendline[MAX_MESSAGE_SIZE], recvline[MAX_MESSAGE_SIZE], nickname[MAX_NICKNAME_SIZE];
+struct sockaddr_in servaddr, cliaddr;
+
+void send_message(char * message, char * sender, struct sockaddr_in recipient) {
+	if (sendto(sockfd, sender, strlen(sender) + 1, 0, (struct sockaddr*)&recipient, sizeof(recipient)) < 0) {
+		perror(NULL);
+		close(sockfd);
+		exit(1);
+	}
+	
+	if (sendto(sockfd, message, strlen(message) + 1, 0, (struct sockaddr*)&recipient, sizeof(recipient)) < 0) {
+		perror(NULL);
+		close(sockfd);
+		exit(1);
+	}
+}
+
 int main(int argc, char** argv)
 {
-	int sockfd;
-	int n, len;
-	char sendline[1000], recvline[1000], nickname[1000];
-	struct sockaddr_in servaddr, cliaddr;
   
 	if (argc != 3)
 	{
 		printf("Usage: ./a.out <IP address> <Nickname>\n");
 		exit(1);
+	}
+	if ( !strcmp(argv[2], "SERVER") ) {
+		printf("You can't use this nickname! Please, select another\n");
+		exit(0);
 	}
 	if ((sockfd = socket(PF_INET, SOCK_DGRAM, 0)) < 0)
 	{
@@ -51,35 +73,21 @@ int main(int argc, char** argv)
 	if (pid != 0) {
 		while(1) 
 		{
-			sleep(1);
 			//printf("You -> ");
-			fgets(sendline, 1000, stdin);
-			
-			if (sendto(sockfd, argv[2], strlen(argv[2]) + 1, 0, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0)
-			{
-				perror(NULL);
-				close(sockfd);
-				exit(1);
-			}
-		
-			if (sendto(sockfd, sendline, strlen(sendline) + 1, 0, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0)
-			{
-				perror(NULL);
-				close(sockfd);
-				exit(1);
-			}
+			fgets(sendline, MAX_MESSAGE_SIZE, stdin);
+			send_message(sendline, argv[2], servaddr);
 		}
 	}
 	else {
 		while(1) {
-			if ((n = recvfrom(sockfd, nickname, 999, 0, (struct sockaddr*) NULL, NULL)) < 0)
+			if ((n = recvfrom(sockfd, nickname, MAX_MESSAGE_SIZE - 1, 0, (struct sockaddr*) NULL, NULL)) < 0)
 			{
 				perror(NULL);
 				close(sockfd);
 				exit(1);
 			}
 			
-			if ((n = recvfrom(sockfd, recvline, 999, 0, (struct sockaddr*) NULL, NULL)) < 0)
+			if ((n = recvfrom(sockfd, recvline, MAX_MESSAGE_SIZE - 1, 0, (struct sockaddr*) NULL, NULL)) < 0)
 			{
 				perror(NULL);
 				close(sockfd);
